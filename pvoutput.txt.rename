@@ -1,0 +1,14 @@
+# Register at pvoutput.org to get your SYSTEMID and APIKEY
+SYSTEMID=<pvoutput systemID>
+APIKEY=<pvoutput apikey>
+# Numbers of inverters (not used but kept for backwards compatibility)
+Inverters=1
+# Register at openweather.org to get your APIKEY
+# If OWMKEY and Longitude and Latitude is not supplied
+# no weather will be read, and tried uploaded to 
+# pvoutput.org - together with your energy data.
+OWMKEY=<fill with your OWMKEY>
+Latitude=yy.yy
+Longitude=-xx.xx
+# Set your timezone string so pytz can grab your localtime inside docker
+TimeZone=America/Sao_Paulo

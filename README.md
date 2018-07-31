@@ -18,3 +18,9 @@ Values read from inverter are upload to [pvoutput.org](https://pvoutput.org) and
 If you do not want to donate just remove extra features (v7~v12 paramenters).
 
 Optionally this code reads local temperature from [OpenWheatherMap](https://openweathermap.org)
+
+== Usage
+
+To build docker image just run `docker build -t canadian-pvoutput .`
+
+To run in docker create a container with `docker run --restart always --name="pvoutput" -d -i --device=/dev/ttyUSB0 --net=host -v /home/jrbenito/canadian-pvoutput:/app -w /app jrbenito/canadian-pvoutput ./pvoutput.sh`. Script `pvoutput.sh` is a wrapper to run python script continuasly if it fails. Docker will automaticaly restart this container in case of computer reboot or container fails.
