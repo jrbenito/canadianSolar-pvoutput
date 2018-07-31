@@ -1,0 +1,12 @@
+# Register at pvoutput.org to get your SYSTEMID and APIKEY
+SYSTEMID=<Your 5-digit pvoutput.org systems id>
+APIKEY=<Your long API key from pvoutput.org>
+# Numbers of inverters
+Inverters=<The number of inverters you have, 1 or 2>
+# Register at openweather.org to get your APIKEY
+# If OWMKEY and Longitude and Latitude is not supplied
+# no weather will be read, and tried uploaded to 
+# pvoutput.org - together with your energy data.
+OWMKEY=<Your openweather.org API key>
+Latitude=<Latitude of your panels location>
+Longitude=<Longitude of your panels location>
