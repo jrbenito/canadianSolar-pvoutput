@@ -4,6 +4,7 @@ import sys
 import requests
 from datetime import datetime
 from pytz import timezone
+from time import sleep
 from configobj import ConfigObj
 from pyowm import OWM
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
@@ -75,7 +76,7 @@ class Inverter(object):
             
             self.inv.close()
         else:
-            print('Error connecting to port')
+            print 'Error connecting to port'
             ret = False
 
         return ret
@@ -172,7 +173,7 @@ def pvoutput(inv, owm=False):
     # Only report total energy if it has changed since last upload
     if (pvoutput.wh_today_last > inv.wh_today) or \
        (pvoutput.wh_today_last < inv.wh_today):
-        # wh_today reseted or increased since last read
+        # wh_today increased or reset (should not but...) since last read
         pvoutput.wh_today_last = inv.wh_today
         payload['v1'] = inv.wh_today
 
@@ -182,7 +183,7 @@ def pvoutput(inv, owm=False):
         payload['m1'] = payload['m1'] + ' - ' + owm.cmo_str
 
     r = requests.post(url_status, headers=headers, data=payload)
-    print r.status_code, r.url 
+    print r.status_code
 
     # add output
     #payload = {
@@ -192,7 +193,7 @@ def pvoutput(inv, owm=False):
     #}
     #r = requests.post(url_output, headers=headers, data=payload)
     #print r.status_code, r.url
-pvoutput.wh_today_last = 0.0
+pvoutput.wh_today_last = 0
     
 
 def main_loop():
@@ -205,20 +206,43 @@ def main_loop():
     else:
         owm = False
 
-    
-    if owm:
-        try:
-            owm.get()
-            owm.fresh = True
-        except APICallTimeoutError:
-            owm.fresh = False
-    inv.read_inputs()
-    if inv.status <> -1:
-        pvoutput(inv, owm)
-        sys.exit(0)
-    else:
-        sys.exit(1)
-    
+    # start and stop monitoring (hour of the day)
+    shStart = 5 
+    shStop = 21 
+
+    # Loop until end of universe
+    while True:
+        
+        if shStart < localnow().hour < shStop:
+            # get fresh temperature from OWM
+            if owm:
+                try:
+                    owm.get()
+                    owm.fresh = True
+                except APICallTimeoutError:
+                    owm.fresh = False
+
+            # get readings from inverter, if success send  to pvoutput
+            inv.read_inputs()
+            if inv.status != -1:
+                pvoutput(inv, owm)
+                sleep(300) # 5 minutes
+            else:
+                # some error
+                sleep(60) # 1 minute before try again
+        else:
+            # it is too late or too early, let's sleep until next shift
+            hour = localnow().hour
+            minute = localnow().minute
+            if 24 > hour >= shStop: 
+                # before midnight
+                snooze = (((shStart - hour) + 24) * 60) - minute
+            elif shStart > hour <= 0: 
+                # after midnight
+                snooze = ((shStart - hour) * 60) - minute
+            print localnow().strftime('%Y-%m-%d %H:%M') + ' - Next shift starts in ' + str(snooze) + ' minutes'
+            snooze = snooze * 60 # seconds
+            sleep(snooze)
 
 if __name__ == '__main__':
     try:
