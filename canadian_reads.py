@@ -241,6 +241,7 @@ def main_loop():
                 # after midnight
                 snooze = ((shStart - hour) * 60) - minute
             print localnow().strftime('%Y-%m-%d %H:%M') + ' - Next shift starts in ' + str(snooze) + ' minutes'
+            sys.stdout.flush()
             snooze = snooze * 60 # seconds
             sleep(snooze)
 
