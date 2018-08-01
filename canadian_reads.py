@@ -57,7 +57,7 @@ class Inverter(object):
                 ret = True
 
                 self.status = rr.registers[0]
-                if self.status <> -1:
+                if self.status != -1:
                     self.cmo_str = 'Status: '+str(self.status)
                 # my setup will never use high nibble but I will code it anyway
                 self.pv_power = float((rr.registers[1] << 16)+rr.registers[2])/10
@@ -75,7 +75,7 @@ class Inverter(object):
             
             self.inv.close()
         else:
-            print 'Error connecting to port'
+            print('Error connecting to port')
             ret = False
 
         return ret
@@ -153,7 +153,7 @@ class Weather(object):
         self.cloud_pct = w.get_clouds()
         cmo_str = ('%s with cloud coverage of %s percent' %(status, self.cloud_pct))
 
-def pvoutput(inv, owm):
+def pvoutput(inv, owm=False):
     url_status = 'http://pvoutput.org/service/r2/addstatus.jsp'
     url_output = 'http://pvoutput.org/service/r2/addoutput.jsp'
     headers = { 'X-Pvoutput-Apikey': APIKEY, 'X-Pvoutput-SystemId': SYSTEMID }
@@ -162,34 +162,56 @@ def pvoutput(inv, owm):
     payload = {
         'd': inv.date.strftime('%Y%m%d'),
         't': inv.date.strftime('%H:%M'),
-        'v1': inv.wh_today,
         'v2': inv.ac_power,
-        'v5': owm.temperature,
         'v6': inv.pv_volts,
         'v8': inv.ac_volts,
         'v9': inv.temp,
         'c1': 0,
-        'm1': inv.cmo_str + ' - ' + owm.cmo_str
+        'm1': inv.cmo_str
     }
+    # Only report total energy if it has changed since last upload
+    if (pvoutput.wh_today_last > inv.wh_today) or \
+       (pvoutput.wh_today_last < inv.wh_today):
+        # wh_today reseted or increased since last read
+        pvoutput.wh_today_last = inv.wh_today
+        payload['v1'] = inv.wh_today
+
+    # temperature report only if available
+    if owm and owm.fresh:
+        payload['v5'] = owm.temperature
+        payload['m1'] = payload['m1'] + ' - ' + owm.cmo_str
+
     r = requests.post(url_status, headers=headers, data=payload)
-    print r.status_code, r.url
+    print r.status_code, r.url 
 
     # add output
-    payload = {
-        'd': inv.date.strftime('%Y%m%d'),
-        'g': inv.wh_today,
-        'cm': inv.cmo_str + ' - ' + owm.cmo_str
-    }
-    r = requests.post(url_output, headers=headers, data=payload)
-    print r.status_code, r.url
+    #payload = {
+    #    'd': inv.date.strftime('%Y%m%d'),
+    #    'g': inv.wh_today,
+    #    'cm': inv.cmo_str + ' - ' + owm.cmo_str
+    #}
+    #r = requests.post(url_output, headers=headers, data=payload)
+    #print r.status_code, r.url
+pvoutput.wh_today_last = 0.0
     
 
 def main_loop():
+    # init
     inv = Inverter(0x1,'/dev/ttyUSB0')
     inv.version()
+    if OWMKey:
+        owm = Weather(OWMKey, OWMLat, OWMLon)
+        owm.fresh = False
+    else:
+        owm = False
 
-    owm = Weather(OWMKey, OWMLat, OWMLon)
-    owm.get()
+    
+    if owm:
+        try:
+            owm.get()
+            owm.fresh = True
+        except APICallTimeoutError:
+            owm.fresh = False
     inv.read_inputs()
     if inv.status <> -1:
         pvoutput(inv, owm)
