@@ -213,7 +213,7 @@ def main_loop():
     # Loop until end of universe
     while True:
         
-        if shStart < localnow().hour < shStop:
+        if shStart <= localnow().hour < shStop:
             # get fresh temperature from OWM
             if owm:
                 try:
