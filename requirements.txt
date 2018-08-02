@@ -1,13 +1,6 @@
-certifi==2018.4.16
-chardet==3.0.4
 configobj==5.0.6
-geojson==2.3.0
-idna==2.7
-pkg-resources==0.0.0
 pymodbus==1.5.2
 pyowm==2.9.0
 pyserial==3.4
 pytz==2018.5
 requests==2.19.1
-six==1.11.0
-urllib3==1.23
