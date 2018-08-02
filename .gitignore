@@ -1,1 +1,4 @@
 pvoutput.txt
+*.py[cod]     # Will match .pyc, .pyo and .pyd files.
+__pycache__/  # Exclude the whole folder
+.env/

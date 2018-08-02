@@ -8,10 +8,6 @@ of Growatt inverters. Besides very similar hardware and display interface look a
 Although there is a function to synchronize inverter's clock based on comments posted to the Steffen blog, this function 
 was never tested since Canadian opted to not implement clock features into CSI-3K-TL.
 
-== Docker
-
-For portability and also for simplify development, I run this code into a docker container. Dockerfile is very simple and provided.
-
 == pvoutput
 
 Values read from inverter are upload to [pvoutput.org](https://pvoutput.org) and this code assumes the account has "donantion" features enabled.
@@ -21,6 +17,17 @@ Optionally this code reads local temperature from [OpenWheatherMap](https://open
 
 == Usage
 
+=== Docker
+ 
+For portability and also for simplify development, I run this code into a docker container. Dockerfile is very simple and provided.
+
 To build docker image just run `docker build -t canadian-pvoutput .`
 
 To run in docker create a container with `docker run --restart always --name="pvoutput" -d -i --device=/dev/ttyUSB0 --net=host -v /home/jrbenito/canadian-pvoutput:/app -w /app jrbenito/canadian-pvoutput ./pvoutput.sh`. Script `pvoutput.sh` is a wrapper to run python script continuasly if it fails. Docker will automaticaly restart this container in case of computer reboot or container fails.
+
+=== Direct (no docker)
+
+```
+$ pip install -r requirements.txt
+$ ./pvoutput.sh
+```
