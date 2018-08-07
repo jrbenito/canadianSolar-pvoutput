@@ -226,7 +226,8 @@ def main_loop():
                 try:
                     owm.get()
                     owm.fresh = True
-                except APICallTimeoutError:
+                except Exception as e:
+                    print "Error: %s".format(e)
                     owm.fresh = False
 
             # get readings from inverter, if success send  to pvoutput
