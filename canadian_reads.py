@@ -176,6 +176,7 @@ def pvoutput(inv, owm=False):
         'v6': inv.pv_volts,
         'v8': inv.ac_volts,
         'v9': inv.temp,
+        'v10': inv.wh_total,
         'c1': 0,
         'm1': inv.cmo_str
     }
