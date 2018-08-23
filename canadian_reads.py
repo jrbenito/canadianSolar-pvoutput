@@ -192,8 +192,17 @@ def pvoutput(inv, owm=False):
         payload['v5'] = owm.temperature
         payload['m1'] = payload['m1'] + ' - ' + owm.cmo_str
 
-    r = requests.post(url_status, headers=headers, data=payload)
-    print r.status_code
+    try:
+        r = requests.post(url_status, headers=headers, data=payload)
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as errh:
+        print (localnow().strftime('%Y-%m-%d %H:%M'), " Http Error:", errh)
+    except requests.exceptions.ConnectionError as errc:
+        print (localnow().strftime('%Y-%m-%d %H:%M'), "Error Connecting:", errc)
+    except requests.exceptions.Timeout as errt:
+        print (localnow().strftime('%Y-%m-%d %H:%M'), "Timeout Error:", errt)
+    except requests.exceptions.RequestException as err:
+        print (localnow().strftime('%Y-%m-%d %H:%M'), "OOps: Something Else", err)
 
     # add output
 #    payload = {
