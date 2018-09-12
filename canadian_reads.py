@@ -197,6 +197,7 @@ def pvoutput(inv, owm=False):
         try:
             r = requests.post(url_status, headers=headers, data=payload)
             r.raise_for_status()
+            break
         except requests.exceptions.HTTPError as errh:
             print (localnow().strftime('%Y-%m-%d %H:%M'), " Http Error:", errh)
         except requests.exceptions.ConnectionError as errc:
@@ -208,7 +209,8 @@ def pvoutput(inv, owm=False):
         # wait a little before retry
         sleep(5)
     else:
-        print (localnow().strftime('%Y-%m-%d %H:%M'), "Could not send data after some attempts")
+        print (localnow().strftime('%Y-%m-%d %H:%M'),
+               "Could not send data after some attempts")
 
     # add output
 #    payload = {
@@ -243,7 +245,7 @@ def main_loop():
                     owm.get()
                     owm.fresh = True
                 except Exception as e:
-                    print "Error: %s".format(e)
+                    print 'Error getting weather: {}'.format(e)
                     owm.fresh = False
 
             # get readings from inverter, if success send  to pvoutput
