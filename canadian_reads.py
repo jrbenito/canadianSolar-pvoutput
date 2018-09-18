@@ -209,7 +209,7 @@ def pvoutput(inv, owm=False):
         sleep(5)
     else:
         print (localnow().strftime('%Y-%m-%d %H:%M'),
-               "Could not send data after some attempts")
+               "Could not send data after {} attempts".format(i))
 
     # add output
 #    payload = {
