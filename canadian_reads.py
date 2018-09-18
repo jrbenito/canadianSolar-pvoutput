@@ -160,7 +160,7 @@ class Weather(object):
         status = w.get_detailed_status()
         self.temperature = w.get_temperature(unit='celsius')['temp']
         self.cloud_pct = w.get_clouds()
-        cmo_str = ('%s with cloud coverage of %s percent' % (status, self.cloud_pct))
+        self.cmo_str = ('%s with cloud coverage of %s percent' % (status, self.cloud_pct))
 
 
 def pvoutput(inv, owm=False):
