@@ -20,6 +20,9 @@ Optionally this code reads local temperature from [OpenWheatherMap](https://open
 == Usage
 
 === Docker
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1a8b27961c904e8093f5adaa40ca8e8f)](https://app.codacy.com/app/jrbenito/canadianSolar-pvoutput?utm_source=github.com&utm_medium=referral&utm_content=jrbenito/canadianSolar-pvoutput&utm_campaign=Badge_Grade_Dashboard)
+
  
 For portability and also for simplify development, I run this code into a docker container. Dockerfile is very simple and provided.
 
