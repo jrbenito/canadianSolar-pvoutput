@@ -165,7 +165,6 @@ class Weather(object):
 
 def pvoutput(inv, owm=False):
     url_status = 'http://pvoutput.org/service/r2/addstatus.jsp'
-    url_output = 'http://pvoutput.org/service/r2/addoutput.jsp'
     headers = {'X-Pvoutput-Apikey': APIKEY, 'X-Pvoutput-SystemId': SYSTEMID}
 
     # add status
