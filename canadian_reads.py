@@ -4,7 +4,7 @@ import sys
 import requests
 from datetime import datetime
 from pytz import timezone
-from time import sleep
+from time import sleep, time
 from configobj import ConfigObj
 from pyowm import OWM
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
@@ -163,63 +163,100 @@ class Weather(object):
         self.cmo_str = ('%s with cloud coverage of %s percent' % (status, self.cloud_pct))
 
 
-def pvoutput(inv, owm=False):
-    url_status = 'http://pvoutput.org/service/r2/addstatus.jsp'
-    headers = {'X-Pvoutput-Apikey': APIKEY, 'X-Pvoutput-SystemId': SYSTEMID}
+class PVOutputAPI(object):
+    wh_today_last = 0
 
-    # add status
-    payload = {
-        'd': inv.date.strftime('%Y%m%d'),
-        't': inv.date.strftime('%H:%M'),
-        'v2': inv.ac_power,
-        'v6': inv.pv_volts,
-        'v8': inv.ac_volts,
-        'v9': inv.temp,
-        'v10': inv.wh_total,
-        'c1': 0,
-        'm1': inv.cmo_str
-    }
-    # Only report total energy if it has changed since last upload
-    if (pvoutput.wh_today_last > inv.wh_today) or \
-       (pvoutput.wh_today_last < inv.wh_today):
-        # wh_today increased or reset (should not but...) since last read
-        pvoutput.wh_today_last = inv.wh_today
-        payload['v1'] = inv.wh_today
+    def __init__(self, API, systemID):
+        self.API = API
+        self.systemID = systemID
 
-    # temperature report only if available
-    if owm and owm.fresh:
-        payload['v5'] = owm.temperature
-        payload['m1'] = payload['m1'] + ' - ' + owm.cmo_str
+    def add_status(self, payload):
+        """Add live output data. Data should contain the parameters as described
+        here: http://pvoutput.org/help.html#api-addstatus ."""
+        self.__call("https://pvoutput.org/service/r2/addstatus.jsp", payload)
 
-    # Make tree attempts
-    for i in range(3):
-        try:
-            r = requests.post(url_status, headers=headers, data=payload)
-            r.raise_for_status()
-            break
-        except requests.exceptions.HTTPError as errh:
-            print (localnow().strftime('%Y-%m-%d %H:%M'), " Http Error:", errh)
-        except requests.exceptions.ConnectionError as errc:
-            print (localnow().strftime('%Y-%m-%d %H:%M'), "Error Connecting:", errc)
-        except requests.exceptions.Timeout as errt:
-            print (localnow().strftime('%Y-%m-%d %H:%M'), "Timeout Error:", errt)
-        except requests.exceptions.RequestException as err:
-            print (localnow().strftime('%Y-%m-%d %H:%M'), "OOps: Something Else", err)
-        # wait a little before retry
-        sleep(5)
-    else:
-        print (localnow().strftime('%Y-%m-%d %H:%M'),
-               "Could not send data after {} attempts".format(i))
+    def add_output(self, payload):
+        """Add end of day output information. Data should be a dictionary with
+        parameters as described here: http://pvoutput.org/help.html#api-addoutput ."""
+        self.__call("http://pvoutput.org/service/r2/addoutput.jsp", payload)
 
-    # add output
-#    payload = {
-#        'd': inv.date.strftime('%Y%m%d'),
-#        'g': inv.wh_today,
-#        'cm': inv.cmo_str + ' - ' + owm.cmo_str
-#    }
-#    r = requests.post(url_output, headers=headers, data=payload)
-#    print r.status_code, r.url
-pvoutput.wh_today_last = 0
+    def __call(self, url, payload):
+        headers = {
+            'X-Pvoutput-Apikey': self.API,
+            'X-Pvoutput-SystemId': self.systemID,
+            'X-Rate-Limit': '1'
+        }
+
+        # Make tree attempts
+        for i in range(3):
+            try:
+                r = requests.post(url, headers=headers, data=payload, timeout=10)
+                reset = round(float(r.headers['X-Rate-Limit-Reset']) - time())
+                if int(r.headers['X-Rate-Limit-Remaining']) < 10:
+                    print("Only {} requests left, reset after {} seconds".format(
+                        r.headers['X-Rate-Limit-Remaining'],
+                        reset))
+                if r.status_code == 403:
+                    print("Forbidden: " + r.reason)
+                    sleep(reset + 1)
+                else:
+                    r.raise_for_status()
+                    break
+            except requests.exceptions.HTTPError as errh:
+                print(localnow().strftime('%Y-%m-%d %H:%M'), " Http Error:", errh)
+            except requests.exceptions.ConnectionError as errc:
+                print(localnow().strftime('%Y-%m-%d %H:%M'), "Error Connecting:", errc)
+            except requests.exceptions.Timeout as errt:
+                print(localnow().strftime('%Y-%m-%d %H:%M'), "Timeout Error:", errt)
+            except requests.exceptions.RequestException as err:
+                print(localnow().strftime('%Y-%m-%d %H:%M'), "OOps: Something Else", err)
+
+            sleep(3)
+        else:
+            print(localnow().strftime('%Y-%m-%d %H:%M'), "Failed to call PVOutput API")
+
+    def send_status(self, date, energy_gen=None, power_gen=None, energy_imp=None,
+                    power_imp=None, temp=None, vdc=None, cumulative=False, vac=None,
+                    temp_inv=None, energy_life=None, comments=None, power_vdc=None):
+        # format status payload
+        payload = {
+            'd': date.strftime('%Y%m%d'),
+            't': date.strftime('%H:%M'),
+        }
+
+        # Only report total energy if it has changed since last upload
+        # this trick avoids avg power to zero with inverter that reports
+        # generation in 100 watts increments (Growatt and Canadian solar)
+        if ((energy_gen is not None) and (self.wh_today_last != energy_gen)):
+            self.wh_today_last = int(energy_gen)
+            payload['v1'] = int(energy_gen)
+
+        if power_gen is not None:
+            payload['v2'] = float(power_gen)
+        if energy_imp is not None:
+            payload['v3'] = int(energy_imp)
+        if power_imp is not None:
+            payload['v4'] = float(power_imp)
+        if temp is not None:
+            payload['v5'] = float(temp)
+        if vdc is not None:
+            payload['v6'] = float(vdc)
+        if cumulative is not None:
+            payload['c1'] = 1
+        if vac is not None:
+            payload['v8'] = float(vac)
+        if temp_inv is not None:
+            payload['v9'] = float(temp_inv)
+        if energy_life is not None:
+            payload['v10'] = int(energy_life)
+        if comments is not None:
+            payload['m1'] = str(comments)[:30]
+        # calculate efficiency
+        if (power_gen is not None) and (power_vdc is not None):
+            payload['v12'] = float(power_gen) / float(power_vdc)
+
+        # Send status
+        self.add_status(payload)
 
 
 def main_loop():
@@ -231,6 +268,8 @@ def main_loop():
         owm.fresh = False
     else:
         owm = False
+
+    pvo = PVOutputAPI(APIKEY, SYSTEMID)
 
     # start and stop monitoring (hour of the day)
     shStart = 5
@@ -250,7 +289,12 @@ def main_loop():
             # get readings from inverter, if success send  to pvoutput
             inv.read_inputs()
             if inv.status != -1:
-                pvoutput(inv, owm)
+                # pvoutput(inv, owm)
+                pvo.send_status(date=inv.date, energy_gen=inv.wh_today,
+                                power_gen=inv.ac_power, vdc=inv.pv_volts,
+                                vac=inv.ac_volts, temp=owm.temperature,
+                                temp_inv=inv.temp, energy_life=inv.wh_total,
+                                power_vdc=inv.pv_power)
                 sleep(300)  # 5 minutes
             else:
                 # some error
