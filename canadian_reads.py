@@ -164,27 +164,27 @@ class Weather(object):
 
 
 class PVOutputAPI(object):
-    wh_today_last = 0
 
     def __init__(self, API, system_id=None):
-        self.API = API
-        self.systemID = system_id
+        self._API = API
+        self._systemID = system_id
+        self._wh_today_last = 0
 
     def add_status(self, payload, system_id=None):
         """Add live output data. Data should contain the parameters as described
         here: http://pvoutput.org/help.html#api-addstatus ."""
-        sys_id = system_id if system_id is not None else self.systemID
+        sys_id = system_id if system_id is not None else self._systemID
         self.__call("https://pvoutput.org/service/r2/addstatus.jsp", payload, sys_id)
 
     def add_output(self, payload, system_id=None):
         """Add end of day output information. Data should be a dictionary with
         parameters as described here: http://pvoutput.org/help.html#api-addoutput ."""
-        sys_id = system_id if system_id is not None else self.systemID
+        sys_id = system_id if system_id is not None else self._systemID
         self.__call("http://pvoutput.org/service/r2/addoutput.jsp", payload, sys_id)
 
     def __call(self, url, payload, system_id=None):
         headers = {
-            'X-Pvoutput-Apikey': self.API,
+            'X-Pvoutput-Apikey': self._API,
             'X-Pvoutput-SystemId': system_id,
             'X-Rate-Limit': '1'
         }
@@ -231,8 +231,8 @@ class PVOutputAPI(object):
         # Only report total energy if it has changed since last upload
         # this trick avoids avg power to zero with inverter that reports
         # generation in 100 watts increments (Growatt and Canadian solar)
-        if ((energy_gen is not None) and (self.wh_today_last != energy_gen)):
-            self.wh_today_last = int(energy_gen)
+        if ((energy_gen is not None) and (self._wh_today_last != energy_gen)):
+            self._wh_today_last = int(energy_gen)
             payload['v1'] = int(energy_gen)
 
         if power_gen is not None:
