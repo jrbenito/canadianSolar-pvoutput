@@ -3,3 +3,4 @@ pvoutput.txt
 __pycache__/  # Exclude the whole folder
 .env
 .venv
+.vscode

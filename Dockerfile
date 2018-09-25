@@ -1,3 +1,5 @@
-FROM resin/raspberrypi-python:2.7
+FROM python:2.7-alpine
+LABEL maintainer="Josenivaldo Benito Jr. <SvenDowideit@home.org.au>"
 
-RUN pip install --no-cache-dir pyowm configobj pymodbus pytz
+COPY requirements.txt .
+RUN pip install --no-cache-dir  -r requirements.txt
