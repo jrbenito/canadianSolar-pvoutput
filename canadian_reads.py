@@ -211,9 +211,10 @@ class PVOutputAPI(object):
             except requests.exceptions.RequestException as err:
                 print(localnow().strftime('%Y-%m-%d %H:%M'), "OOps: Something Else", err)
 
-            sleep(3)
+            sleep(5)
         else:
-            print(localnow().strftime('%Y-%m-%d %H:%M'), "Failed to call PVOutput API")
+            print(localnow().strftime('%Y-%m-%d %H:%M'),
+                  "Failed to call PVOutput API after {} attempts.".format(i))
 
     def send_status(self, date, energy_gen=None, power_gen=None, energy_imp=None,
                     power_imp=None, temp=None, vdc=None, cumulative=False, vac=None,
