@@ -28,9 +28,9 @@ class Inverter(object):
 
     def __init__(self, address, port):
         """Return a Inverter object with port set to *port* and
-         values set to their initial state."""
+        values set to their initial state."""
         self._inv = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
-                                parity='N', bytesize=8, timeout=1)
+                                 parity='N', bytesize=8, timeout=1)
         self._unit = address
 
         # Inverter properties
@@ -249,7 +249,9 @@ def main_loop():
             inv.read_inputs()
             if inv.status != -1:
                 pvoutput(inv, owm)
-                sleep(300)  # 5 minutes
+                # sleep until next multiple of 5 minutes
+                min = 5 - localnow().minute % 5
+                sleep(min*60 - localnow().second)
             else:
                 # some error
                 sleep(60)  # 1 minute before try again
