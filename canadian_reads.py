@@ -294,9 +294,12 @@ def main_loop():
             inv.read_inputs()
             if inv.status != -1:
                 # pvoutput(inv, owm)
+                # temperature report only if available
+                temp = owm.temperature if owm and owm.fresh else None
+
                 pvo.send_status(date=inv.date, energy_gen=inv.wh_today,
                                 power_gen=inv.ac_power, vdc=inv.pv_volts,
-                                vac=inv.ac_volts, temp=owm.temperature,
+                                vac=inv.ac_volts, temp=temp,
                                 temp_inv=inv.temp, energy_life=inv.wh_total,
                                 power_vdc=inv.pv_power)
                 sleep(300)  # 5 minutes
