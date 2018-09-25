@@ -166,24 +166,26 @@ class Weather(object):
 class PVOutputAPI(object):
     wh_today_last = 0
 
-    def __init__(self, API, systemID):
+    def __init__(self, API, system_id=None):
         self.API = API
-        self.systemID = systemID
+        self.systemID = system_id
 
-    def add_status(self, payload):
+    def add_status(self, payload, system_id=None):
         """Add live output data. Data should contain the parameters as described
         here: http://pvoutput.org/help.html#api-addstatus ."""
-        self.__call("https://pvoutput.org/service/r2/addstatus.jsp", payload)
+        sys_id = system_id if system_id is not None else self.systemID
+        self.__call("https://pvoutput.org/service/r2/addstatus.jsp", payload, sys_id)
 
-    def add_output(self, payload):
+    def add_output(self, payload, system_id=None):
         """Add end of day output information. Data should be a dictionary with
         parameters as described here: http://pvoutput.org/help.html#api-addoutput ."""
-        self.__call("http://pvoutput.org/service/r2/addoutput.jsp", payload)
+        sys_id = system_id if system_id is not None else self.systemID
+        self.__call("http://pvoutput.org/service/r2/addoutput.jsp", payload, sys_id)
 
-    def __call(self, url, payload):
+    def __call(self, url, payload, system_id=None):
         headers = {
             'X-Pvoutput-Apikey': self.API,
-            'X-Pvoutput-SystemId': self.systemID,
+            'X-Pvoutput-SystemId': system_id,
             'X-Rate-Limit': '1'
         }
 
@@ -218,7 +220,8 @@ class PVOutputAPI(object):
 
     def send_status(self, date, energy_gen=None, power_gen=None, energy_imp=None,
                     power_imp=None, temp=None, vdc=None, cumulative=False, vac=None,
-                    temp_inv=None, energy_life=None, comments=None, power_vdc=None):
+                    temp_inv=None, energy_life=None, comments=None, power_vdc=None,
+                    system_id=None):
         # format status payload
         payload = {
             'd': date.strftime('%Y%m%d'),
@@ -257,7 +260,7 @@ class PVOutputAPI(object):
             payload['v12'] = float(power_gen) / float(power_vdc)
 
         # Send status
-        self.add_status(payload)
+        self.add_status(payload, system_id)
 
 
 def main_loop():
