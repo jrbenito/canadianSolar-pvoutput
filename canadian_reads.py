@@ -25,40 +25,42 @@ def localnow():
 
 
 class Inverter(object):
-    # Inverter properties
-    status = -1
-    pv_power = 0.0
-    pv_volts = 0.0
-    ac_volts = 0.0
-    ac_power = 0.0
-    wh_today = 0
-    wh_total = 0
-    temp = 0.0
-    firmware = ''
-    control_fw = ''
-    model_no = ''
-    serial_no = ''
-    dtc = -1
-    cmo_str = ''
 
     def __init__(self, address, port):
         """Return a Inverter object with port set to *port* and
          values set to their initial state."""
-        self.inv = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
+        self._inv = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
                                 parity='N', bytesize=8, timeout=1)
-        self.unit = address
+        self._unit = address
+
+        # Inverter properties
         self.date = timezone('UTC').localize(datetime(1970, 1, 1, 0, 0, 0))
+        self.status = -1
+        self.pv_power = 0.0
+        self.pv_volts = 0.0
+        self.ac_volts = 0.0
+        self.ac_power = 0.0
+        self.wh_today = 0
+        self.wh_total = 0
+        self.temp = 0.0
+        self.firmware = ''
+        self.control_fw = ''
+        self.model_no = ''
+        self.serial_no = ''
+        self.dtc = -1
+        self.cmo_str = ''
 
     def read_inputs(self):
         """Try read input properties from inverter, return true if succeed"""
         ret = False
 
-        if self.inv.connect():
+        if self._inv.connect():
             # by default read first 45 registers (from 0 to 44)
             # they contain all basic information needed to report
-            rr = self.inv.read_input_registers(0, 45, unit=self.unit)
+            rr = self._inv.read_input_registers(0, 45, unit=self._unit)
             if not rr.isError():
                 ret = True
+                self.date = localnow()
 
                 self.status = rr.registers[0]
                 if self.status != -1:
@@ -71,13 +73,11 @@ class Inverter(object):
                 self.wh_today = float((rr.registers[26] << 16)+rr.registers[27])*100
                 self.wh_total = float((rr.registers[28] << 16)+rr.registers[29])*100
                 self.temp = float(rr.registers[32])/10
-                self.date = localnow()
-
             else:
                 self.status = -1
                 ret = False
 
-            self.inv.close()
+            self._inv.close()
         else:
             print 'Error connecting to port'
             ret = False
@@ -88,10 +88,10 @@ class Inverter(object):
         """Read firmware version"""
         ret = False
 
-        if self.inv.connect():
+        if self._inv.connect():
             # by default read first 45 holding registers (from 0 to 44)
             # they contain more than needed data
-            rr = self.inv.read_holding_registers(0, 45, unit=self.unit)
+            rr = self._inv.read_holding_registers(0, 45, unit=self._unit)
             if not rr.isError():
                 ret = True
                 # returns G.1.8 on my unit
@@ -132,7 +132,7 @@ class Inverter(object):
                 self.dtc = -1
                 ret = False
 
-            self.inv.close()
+            self._inv.close()
         else:
             print 'Error connecting to port'
             ret = False
@@ -141,21 +141,19 @@ class Inverter(object):
 
 
 class Weather(object):
-    API = ''
-    lat = 0.0
-    lon = 0.0
-    temperature = 0.0
-    cloud_pct = 0
-    cmo_str = ''
 
     def __init__(self, API, lat, lon):
-        self.API = API
-        self.lat = lat
-        self.lon = lon
-        self.owm = OWM(self.API)
+        self._API = API
+        self._lat = float(lat)
+        self._lon = float(lon)
+        self._owm = OWM(self._API)
+
+        self.temperature = 0.0
+        self.cloud_pct = 0
+        self.cmo_str = ''
 
     def get(self):
-        obs = self.owm.weather_at_coords(self.lat, self.lon)
+        obs = self._owm.weather_at_coords(self._lat, self._lon)
         w = obs.get_weather()
         status = w.get_detailed_status()
         self.temperature = w.get_temperature(unit='celsius')['temp']
