@@ -18,6 +18,16 @@ Optionally this code reads local temperature from [OpenWheatherMap](https://open
 
 ## Usage
 
+### Configuration
+
+There is a configuration template you need to copy/rename and edit:
+
+```
+$ cp pvoutput.conf.rename pvoutput.conf
+```
+
+Edit `pvoutput.conf` with your preferred text editor. All commented lines are optional, but othere might have values. Please notice that some options are lists (i.e. systemID and addresses), those lists are represented as comma separated values (val1, val2, val3) but if only one value is being used, finalize the line with a comma (i.e. systemID=id1,).
+
 ### Docker
  
 For portability and also for simplify development, I run this code into a docker container. Dockerfile is very simple and provided.

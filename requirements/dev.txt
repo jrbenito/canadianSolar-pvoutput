@@ -1,3 +1,4 @@
 # add base.txt, all dev dependecies go after it
 -r base.txt
 flake8
+rope

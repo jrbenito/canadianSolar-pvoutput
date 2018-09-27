@@ -5,23 +5,14 @@ import requests
 from datetime import datetime
 from pytz import timezone
 from time import sleep, time
-from configobj import ConfigObj
+from configobj import ConfigObj, ConfigObjError
+from validate import Validator
 from pyowm import OWM
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 
-# read settings from config file
-config = ConfigObj("pvoutput.txt")
-SYSTEMID = config['SYSTEMID']
-APIKEY = config['APIKEY']
-OWMKey = config['OWMKEY']
-OWMLon = float(config['Longitude'])
-OWMLat = float(config['Latitude'])
-LocalTZ = timezone(config['TimeZone'])
-
-
 # Local time with timezone
 def localnow():
-    return datetime.now(tz=LocalTZ)
+    return datetime.now(tz=localnow.LocalTZ)
 
 
 class Inverter(object):
@@ -262,16 +253,10 @@ class PVOutputAPI(object):
 
 
 def main_loop():
-    # init
-    inv = Inverter(0x1, '/dev/ttyUSB0')
-    inv.version()
-    if OWMKey:
-        owm = Weather(OWMKey, OWMLat, OWMLon)
-        owm.fresh = False
-    else:
-        owm = False
 
-    pvo = PVOutputAPI(APIKEY, SYSTEMID)
+    # FIXME
+    # this shall be delayed
+    inv.version()
 
     # start and stop monitoring (hour of the day)
     shStart = 5
@@ -280,7 +265,7 @@ def main_loop():
     while True:
         if shStart <= localnow().hour < shStop:
             # get fresh temperature from OWM
-            if owm:
+            if owm is not None:
                 try:
                     owm.get()
                     owm.fresh = True
@@ -293,7 +278,9 @@ def main_loop():
             if inv.status != -1:
                 # pvoutput(inv, owm)
                 # temperature report only if available
-                temp = owm.temperature if owm and owm.fresh else None
+                temp = None
+                if owm is not None and owm.fresh:
+                    temp = owm.temperature
 
                 pvo.send_status(date=inv.date, energy_gen=inv.wh_today,
                                 power_gen=inv.ac_power, vdc=inv.pv_volts,
@@ -324,6 +311,31 @@ def main_loop():
 
 
 if __name__ == '__main__':
+    # set objects
+    try:
+        config = ConfigObj("pvoutput.conf",
+                            configspec="pvoutput-configspec.ini")
+        validator = Validator()
+        # FIXME: if only some are false?
+        if not config.validate(validator):
+            raise ConfigObjError
+    except ConfigObjError:
+        print('Could not read config or configspec file', ConfigObjError)
+
+    # FIXME: is this the most pythonic code?
+    localnow.LocalTZ = timezone(config['timezone'])
+
+    # init clients
+    inv = Inverter(config['inverters']['addresses'][0], config['inverters']['port'])
+
+    if config['owm']['OWMKEY'] is not None:
+        owm = Weather(config['owm']['OWMKEY'], config['owm']['latitude'], config['owm']['longitude'])
+        owm.fresh = False
+    else:
+        owm = None
+
+    pvo = PVOutputAPI(config['pvoutput']['APIKEY'], config['pvoutput']['systemID'])
+
     try:
         main_loop()
     except KeyboardInterrupt:
