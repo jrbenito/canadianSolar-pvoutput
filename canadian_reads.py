@@ -20,7 +20,7 @@ class Inverter(object):
     def __init__(self, address, port):
         """Return a Inverter object with port set to *port* and
         values set to their initial state."""
-        self._inv = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
+        self._modbus = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
                                  parity='N', bytesize=8, timeout=1)
         self._unit = address
 
@@ -45,10 +45,10 @@ class Inverter(object):
         """Try read input properties from inverter, return true if succeed"""
         ret = False
 
-        if self._inv.connect():
+        if self._modbus.connect():
             # by default read first 45 registers (from 0 to 44)
             # they contain all basic information needed to report
-            rr = self._inv.read_input_registers(0, 45, unit=self._unit)
+            rr = self._modbus.read_input_registers(0, 45, unit=self._unit)
             if not rr.isError():
                 ret = True
                 self.date = localnow()
@@ -68,7 +68,7 @@ class Inverter(object):
                 self.status = -1
                 ret = False
 
-            self._inv.close()
+            self._modbus.close()
         else:
             print 'Error connecting to port'
             ret = False
@@ -79,10 +79,10 @@ class Inverter(object):
         """Read firmware version"""
         ret = False
 
-        if self._inv.connect():
+        if self._modbus.connect():
             # by default read first 45 holding registers (from 0 to 44)
             # they contain more than needed data
-            rr = self._inv.read_holding_registers(0, 45, unit=self._unit)
+            rr = self._modbus.read_holding_registers(0, 45, unit=self._unit)
             if not rr.isError():
                 ret = True
                 # returns G.1.8 on my unit
@@ -123,7 +123,7 @@ class Inverter(object):
                 self.dtc = -1
                 ret = False
 
-            self._inv.close()
+            self._modbus.close()
         else:
             print 'Error connecting to port'
             ret = False
