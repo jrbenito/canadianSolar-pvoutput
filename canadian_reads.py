@@ -316,7 +316,6 @@ if __name__ == '__main__':
         config = ConfigObj("pvoutput.conf",
                             configspec="pvoutput-configspec.ini")
         validator = Validator()
-        # FIXME: if only some are false?
         if not config.validate(validator):
             raise ConfigObjError
     except ConfigObjError:
@@ -334,7 +333,11 @@ if __name__ == '__main__':
     else:
         owm = None
 
-    pvo = PVOutputAPI(config['pvoutput']['APIKEY'], config['pvoutput']['systemID'])
+    if ((config['pvoutput']['APIKEY'] is not None) and
+        (config['pvoutput']['systemID'] is not None)):
+        pvo = PVOutputAPI(config['pvoutput']['APIKEY'], config['pvoutput']['systemID'])
+    else:
+        print('Need pvoutput APIKEY and systemID to work')
 
     try:
         main_loop()
