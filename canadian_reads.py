@@ -245,7 +245,7 @@ class PVOutputAPI(object):
         if comments is not None:
             payload['m1'] = str(comments)[:30]
         # calculate efficiency
-        if (power_gen is not None) and (power_vdc is not None):
+        if ((power_vdc is not None) and (power_vdc > 0) and (power_gen is not None)):
             payload['v12'] = float(power_gen) / float(power_vdc)
 
         # Send status
