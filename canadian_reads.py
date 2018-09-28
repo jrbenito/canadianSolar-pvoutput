@@ -320,6 +320,7 @@ if __name__ == '__main__':
             raise ConfigObjError
     except ConfigObjError:
         print('Could not read config or configspec file', ConfigObjError)
+        sys.exit(1)
 
     # FIXME: is this the most pythonic code?
     localnow.LocalTZ = timezone(config['timezone'])
@@ -338,6 +339,7 @@ if __name__ == '__main__':
         pvo = PVOutputAPI(config['pvoutput']['APIKEY'], config['pvoutput']['systemID'])
     else:
         print('Need pvoutput APIKEY and systemID to work')
+        sys.exit(1)
 
     try:
         main_loop()
