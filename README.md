@@ -26,10 +26,12 @@ There is a configuration template you need to copy/rename and edit:
 $ cp pvoutput.conf.rename pvoutput.conf
 ```
 
-Edit `pvoutput.conf` with your preferred text editor. All commented lines are optional, but othere might have values. Please notice that some options are lists (i.e. systemID and addresses), those lists are represented as comma separated values (val1, val2, val3) but if only one value is being used, finalize the line with a comma (i.e. systemID=id1,).
+Edit `pvoutput.conf` with your preferred text editor. All commented lines are optional, but other shall have values. Please notice that some options are lists (i.e. systemID and addresses), those lists are represented as comma separated values (val1, val2, val3). At least pvoutput credentials (`systemID` and `APIKEY`) must be supplied since there are no reasonable defaults to it.
+
+Work with date and time can be tricky. Most system report their date into local time, a few servers use UTC in order to make log matches simpler with other servers around the globe. I personaly use docker to make this code easier to deploy and portable between my PC and the ARM processor at RPi (same docker image runs on both and same docker image can be used to development). Docker images do not mirror their hosts locale and hence inside the container the date is reported UTC. On top of this, every year someone in somewhere decides that daylight saving at that specific "somwhere" place on the globe will change from the last friday of November to the first Tuesday of September just on that year... Well, this sometimes happens here in my place due to all sort of political excuses. To avoid this nightmare, pytz library comes to the rescue. BE AWARE tha config file defaults to UTC, you SHALL provide your correct timezone or configure pvoutput webservice as UTC. Otherwise your report will be shifted in time.
 
 ### Docker
- 
+
 For portability and also for simplify development, I run this code into a docker container. Dockerfile is very simple and provided.
 
 To build docker image just run `docker build -t canadian-pvoutput .`

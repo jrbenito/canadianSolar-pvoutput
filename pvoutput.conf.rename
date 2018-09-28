@@ -3,13 +3,12 @@
 timezone='America/Sao_Paulo'
 
 [pvoutput]
-# enter a comma separated list of systems, if only one finalize with a comma.
-systemID='123456789', # comma is important
+# enter a comma separated list of systems.
+systemID='123456789'
 APIKEY='abcde123456789'
 
 [inverters]
 # enter a comma separated list of addresses, defaults to 0x1
-# end with a comma if using just one address.
 #addresses='0x1','0x2','0xa2'
 #port='/dev/ttyUSB0'
 
