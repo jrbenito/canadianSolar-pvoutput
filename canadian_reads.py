@@ -18,17 +18,24 @@ def localnow():
 
 class Inverter(object):
 
-    def __init__(self, addresses, port):
+    def __init__(self, addresses, port, system_ids):
         """Return a Inverter object with port set to *port* and
         values set to their initial state."""
+        if len(addresses) > len(system_ids):
+            print addresses
+            print system_ids
+            print 'Error: need same number of inverters and system_ids'
+            return None
+
         self._modbus = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
                                     parity='N', bytesize=8, timeout=1)
         self.units = {}
 
-        for address in addresses:
+        for address, sys_id in zip(addresses, system_ids):
             self.units[address] = {
                 # Inverter properties
                 'date': timezone('UTC').localize(datetime(1970, 1, 1, 0, 0, 0)),
+                'system_id': sys_id,
                 'status': -1,
                 'pv_power': 0.0,
                 'pv_volts': 0.0,
@@ -359,7 +366,12 @@ if __name__ == '__main__':
     localnow.LocalTZ = timezone(config['timezone'])
 
     # init clients
-    inv = Inverter(config['inverters']['addresses'][0], config['inverters']['port'])
+    inv = Inverter(config['inverters']['addresses'],
+                   config['inverters']['port'],
+                   config['pvoutput']['systemID'])
+    if inv is None:
+        print 'Could not initialize inverter object'
+        sys.exit(1)
 
     if config['owm']['OWMKEY'] is not None:
         owm = Weather(config['owm']['OWMKEY'], config['owm']['latitude'],
