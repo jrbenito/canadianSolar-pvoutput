@@ -10,6 +10,7 @@ from validate import Validator
 from pyowm import OWM
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 
+
 # Local time with timezone
 def localnow():
     return datetime.now(tz=localnow.LocalTZ)
@@ -17,56 +18,63 @@ def localnow():
 
 class Inverter(object):
 
-    def __init__(self, address, port):
+    def __init__(self, addresses, port):
         """Return a Inverter object with port set to *port* and
         values set to their initial state."""
         self._modbus = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
-                                 parity='N', bytesize=8, timeout=1)
-        self._unit = address
+                                    parity='N', bytesize=8, timeout=1)
+        self.units = {}
 
-        # Inverter properties
-        self.date = timezone('UTC').localize(datetime(1970, 1, 1, 0, 0, 0))
-        self.status = -1
-        self.pv_power = 0.0
-        self.pv_volts = 0.0
-        self.ac_volts = 0.0
-        self.ac_power = 0.0
-        self.wh_today = 0
-        self.wh_total = 0
-        self.temp = 0.0
-        self.firmware = ''
-        self.control_fw = ''
-        self.model_no = ''
-        self.serial_no = ''
-        self.dtc = -1
-        self.cmo_str = ''
+        for address in addresses:
+            self.units[address] = {
+                # Inverter properties
+                'date': timezone('UTC').localize(datetime(1970, 1, 1, 0, 0, 0)),
+                'status': -1,
+                'pv_power': 0.0,
+                'pv_volts': 0.0,
+                'ac_volts': 0.0,
+                'ac_power': 0.0,
+                'wh_today': 0,
+                'wh_total': 0,
+                'temp': 0.0,
+                'firmware': '',
+                'control_fw': '',
+                'model_no': '',
+                'serial_no': '',
+                'dtc': -1,
+                'cmo_str': ''
+            }
 
     def read_inputs(self):
         """Try read input properties from inverter, return true if succeed"""
         ret = False
 
         if self._modbus.connect():
-            # by default read first 45 registers (from 0 to 44)
-            # they contain all basic information needed to report
-            rr = self._modbus.read_input_registers(0, 45, unit=self._unit)
-            if not rr.isError():
-                ret = True
-                self.date = localnow()
 
-                self.status = rr.registers[0]
-                if self.status != -1:
-                    self.cmo_str = 'Status: '+str(self.status)
-                # my setup will never use high nibble but I will code it anyway
-                self.pv_power = float((rr.registers[1] << 16)+rr.registers[2])/10
-                self.pv_volts = float(rr.registers[3])/10
-                self.ac_power = float((rr.registers[11] << 16)+rr.registers[12])/10
-                self.ac_volts = float(rr.registers[14])/10
-                self.wh_today = float((rr.registers[26] << 16)+rr.registers[27])*100
-                self.wh_total = float((rr.registers[28] << 16)+rr.registers[29])*100
-                self.temp = float(rr.registers[32])/10
-            else:
-                self.status = -1
-                ret = False
+            for address, regs in self.unit:
+                # by default read first 45 registers (from 0 to 44)
+                # they contain all basic information needed to report
+                rr = self._modbus.read_input_registers(0, 45, unit=address)
+                if not rr.isError():
+                    ret = True
+                    regs.date = localnow()
+
+                    regs.status = rr.registers[0]
+                    if regs.status != -1:
+                        regs.cmo_str = 'Status: '+str(self.status)
+                    # my setup will never use high nibble but I will code it anyway
+                    regs.pv_power = float((rr.registers[1] << 16)+rr.registers[2])/10
+                    regs.pv_volts = float(rr.registers[3])/10
+                    regs.ac_power = float((rr.registers[11] << 16)+rr.registers[12])/10
+                    regs.ac_volts = float(rr.registers[14])/10
+                    regs.wh_today = float((rr.registers[26] << 16)+rr.registers[27])*100
+                    regs.wh_total = float((rr.registers[28] << 16)+rr.registers[29])*100
+                    regs.temp = float(rr.registers[32])/10
+                else:
+                    regs.status = -1
+                    ret = False
+
+                self.units[address] = regs
 
             self._modbus.close()
         else:
@@ -82,46 +90,63 @@ class Inverter(object):
         if self._modbus.connect():
             # by default read first 45 holding registers (from 0 to 44)
             # they contain more than needed data
-            rr = self._modbus.read_holding_registers(0, 45, unit=self._unit)
-            if not rr.isError():
-                ret = True
-                # returns G.1.8 on my unit
-                self.firmware = \
-                    str(chr(rr.registers[9] >> 8) + chr(rr.registers[9] & 0x000000FF) +
-                        chr(rr.registers[10] >> 8) + chr(rr.registers[10] & 0x000000FF) +
-                        chr(rr.registers[11] >> 8) + chr(rr.registers[11] & 0x000000FF))
 
-                # does not return any interesting thing on my model
-                self.control_fw = \
-                    str(chr(rr.registers[12] >> 8) + chr(rr.registers[12] & 0x000000FF) +
-                        chr(rr.registers[13] >> 8) + chr(rr.registers[13] & 0x000000FF) +
-                        chr(rr.registers[14] >> 8) + chr(rr.registers[14] & 0x000000FF))
+            for address, regs in self.unit:
+                rr = self._modbus.read_holding_registers(0, 45, unit=address)
+                if not rr.isError():
+                    ret = True
+                    # returns G.1.8 on my unit
+                    regs.firmware = str(
+                        chr(rr.registers[9] >> 8) +
+                        chr(rr.registers[9] & 0x000000FF) +
+                        chr(rr.registers[10] >> 8) +
+                        chr(rr.registers[10] & 0x000000FF) +
+                        chr(rr.registers[11] >> 8) +
+                        chr(rr.registers[11] & 0x000000FF))
 
-                # does match the label in the unit
-                self.serial_no = \
-                    str(chr(rr.registers[23] >> 8) + chr(rr.registers[23] & 0x000000FF) +
-                        chr(rr.registers[24] >> 8) + chr(rr.registers[24] & 0x000000FF) +
-                        chr(rr.registers[25] >> 8) + chr(rr.registers[25] & 0x000000FF) +
-                        chr(rr.registers[26] >> 8) + chr(rr.registers[26] & 0x000000FF) +
-                        chr(rr.registers[27] >> 8) + chr(rr.registers[27] & 0x000000FF))
+                    # does not return any interesting thing on my model
+                    regs.control_fw = str(
+                        chr(rr.registers[12] >> 8) +
+                        chr(rr.registers[12] & 0x000000FF) +
+                        chr(rr.registers[13] >> 8) +
+                        chr(rr.registers[13] & 0x000000FF) +
+                        chr(rr.registers[14] >> 8) +
+                        chr(rr.registers[14] & 0x000000FF))
 
-                # as per Growatt protocol
-                mo = (rr.registers[28] << 16) + rr.registers[29]
-                self.model_no = (
-                    'T' + str((mo & 0XF00000) >> 20) + ' Q' + str((mo & 0X0F0000) >> 16) +
-                    ' P' + str((mo & 0X00F000) >> 12) + ' U' + str((mo & 0X000F00) >> 8) +
-                    ' M' + str((mo & 0X0000F0) >> 4) + ' S' + str((mo & 0X00000F))
-                )
+                    # does match the label in the unit
+                    regs.serial_no = str(
+                        chr(rr.registers[23] >> 8) +
+                        chr(rr.registers[23] & 0x000000FF) +
+                        chr(rr.registers[24] >> 8) +
+                        chr(rr.registers[24] & 0x000000FF) +
+                        chr(rr.registers[25] >> 8) +
+                        chr(rr.registers[25] & 0x000000FF) +
+                        chr(rr.registers[26] >> 8) +
+                        chr(rr.registers[26] & 0x000000FF) +
+                        chr(rr.registers[27] >> 8) +
+                        chr(rr.registers[27] & 0x000000FF))
 
-                # 134 for my unit meaning single phase/single tracker inverter
-                self.dtc = rr.registers[43]
-            else:
-                self.firmware = ''
-                self.control_fw = ''
-                self.model_no = ''
-                self.serial_no = ''
-                self.dtc = -1
-                ret = False
+                    # as per Growatt protocol
+                    mo = (rr.registers[28] << 16) + rr.registers[29]
+                    regs.model_no = (
+                        'T' + str((mo & 0XF00000) >> 20) +
+                        ' Q' + str((mo & 0X0F0000) >> 16) +
+                        ' P' + str((mo & 0X00F000) >> 12) +
+                        ' U' + str((mo & 0X000F00) >> 8) +
+                        ' M' + str((mo & 0X0000F0) >> 4) +
+                        ' S' + str((mo & 0X00000F)))
+
+                    # 134 for my unit meaning single phase/single tracker inverter
+                    regs.dtc = rr.registers[43]
+                else:
+                    regs.firmware = ''
+                    regs.control_fw = ''
+                    regs.model_no = ''
+                    regs.serial_no = ''
+                    regs.dtc = -1
+                    ret = False
+
+                self.units[address] = regs
 
             self._modbus.close()
         else:
@@ -322,7 +347,7 @@ if __name__ == '__main__':
     # set objects
     try:
         config = ConfigObj("pvoutput.conf",
-                            configspec="pvoutput-configspec.ini")
+                           configspec="pvoutput-configspec.ini")
         validator = Validator()
         if not config.validate(validator):
             raise ConfigObjError
@@ -337,13 +362,14 @@ if __name__ == '__main__':
     inv = Inverter(config['inverters']['addresses'][0], config['inverters']['port'])
 
     if config['owm']['OWMKEY'] is not None:
-        owm = Weather(config['owm']['OWMKEY'], config['owm']['latitude'], config['owm']['longitude'])
+        owm = Weather(config['owm']['OWMKEY'], config['owm']['latitude'],
+                      config['owm']['longitude'])
         owm.fresh = False
     else:
         owm = None
 
     if ((config['pvoutput']['APIKEY'] is not None) and
-        (config['pvoutput']['systemID'] is not None)):
+       (config['pvoutput']['systemID'] is not None)):
         pvo = PVOutputAPI(config['pvoutput']['APIKEY'], config['pvoutput']['systemID'])
     else:
         print('Need pvoutput APIKEY and systemID to work')
