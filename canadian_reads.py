@@ -10,6 +10,7 @@ from validate import Validator
 from pyowm import OWM
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 
+
 # Local time with timezone
 def localnow():
     return datetime.now(tz=localnow.LocalTZ)
@@ -322,7 +323,7 @@ if __name__ == '__main__':
     # set objects
     try:
         config = ConfigObj("pvoutput.conf",
-                            configspec="pvoutput-configspec.ini")
+                           configspec="pvoutput-configspec.ini")
         validator = Validator()
         if not config.validate(validator):
             raise ConfigObjError
@@ -337,13 +338,14 @@ if __name__ == '__main__':
     inv = Inverter(config['inverters']['addresses'][0], config['inverters']['port'])
 
     if config['owm']['OWMKEY'] is not None:
-        owm = Weather(config['owm']['OWMKEY'], config['owm']['latitude'], config['owm']['longitude'])
+        owm = Weather(config['owm']['OWMKEY'], config['owm']['latitude'],
+                      config['owm']['longitude'])
         owm.fresh = False
     else:
         owm = None
 
     if ((config['pvoutput']['APIKEY'] is not None) and
-        (config['pvoutput']['systemID'] is not None)):
+       (config['pvoutput']['systemID'] is not None)):
         pvo = PVOutputAPI(config['pvoutput']['APIKEY'], config['pvoutput']['systemID'])
     else:
         print('Need pvoutput APIKEY and systemID to work')
