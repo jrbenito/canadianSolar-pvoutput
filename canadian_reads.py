@@ -22,10 +22,7 @@ class Inverter(object):
         """Return a Inverter object with port set to *port* and
         values set to their initial state."""
         if len(addresses) > len(system_ids):
-            print addresses
-            print system_ids
-            print 'Error: need same number of inverters and system_ids'
-            return None
+            raise ValueError("Error: need same number of inverters and system_ids")
 
         self._modbus = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
                                     parity='N', bytesize=8, timeout=1)
@@ -374,11 +371,12 @@ if __name__ == '__main__':
     localnow.LocalTZ = timezone(config['timezone'])
 
     # init clients
-    inv = Inverter(config['inverters']['addresses'],
-                   config['inverters']['port'],
-                   config['pvoutput']['systemID'])
-    if inv is None:
-        print 'Could not initialize inverter object'
+    try:
+        inv = Inverter(config['inverters']['addresses'],
+                       config['inverters']['port'],
+                       config['pvoutput']['systemID'])
+    except ValueError as e:
+        print('Could not initialize inverter object: {}'.format(e))
         sys.exit(1)
 
     if config['owm']['OWMKEY'] is not None:
