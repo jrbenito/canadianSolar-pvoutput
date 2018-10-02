@@ -58,27 +58,30 @@ class Inverter(object):
 
         if self._modbus.connect():
 
-            for address, regs in self.unit:
+            for address, regs in self.units:
                 # by default read first 45 registers (from 0 to 44)
                 # they contain all basic information needed to report
                 rr = self._modbus.read_input_registers(0, 45, unit=address)
                 if not rr.isError():
                     ret = True
-                    regs.date = localnow()
-
-                    regs.status = rr.registers[0]
-                    if regs.status != -1:
-                        regs.cmo_str = 'Status: '+str(self.status)
+                    regs['date'] = localnow()
+                    regs['status'] = rr.registers[0]
+                    if regs['status'] != -1:
+                        regs['cmo_str'] = 'Status: ' + str(regs['status'])
                     # my setup will never use high nibble but I will code it anyway
-                    regs.pv_power = float((rr.registers[1] << 16)+rr.registers[2])/10
-                    regs.pv_volts = float(rr.registers[3])/10
-                    regs.ac_power = float((rr.registers[11] << 16)+rr.registers[12])/10
-                    regs.ac_volts = float(rr.registers[14])/10
-                    regs.wh_today = float((rr.registers[26] << 16)+rr.registers[27])*100
-                    regs.wh_total = float((rr.registers[28] << 16)+rr.registers[29])*100
-                    regs.temp = float(rr.registers[32])/10
+                    regs['pv_power'] = float((rr.registers[1] << 16) +
+                                             rr.registers[2]) / 10
+                    regs['pv_volts'] = float(rr.registers[3]) / 10
+                    regs['ac_power'] = float((rr.registers[11] << 16) +
+                                             rr.registers[12]) / 10
+                    regs['ac_volts'] = float(rr.registers[14]) / 10
+                    regs['wh_today'] = float((rr.registers[26] << 16) +
+                                             rr.registers[27]) * 100
+                    regs['wh_total'] = float((rr.registers[28] << 16) +
+                                             rr.registers[29]) * 100
+                    regs['temp'] = float(rr.registers[32]) / 10
                 else:
-                    regs.status = -1
+                    regs['status'] = -1
                     ret = False
 
                 self.units[address] = regs
@@ -98,12 +101,12 @@ class Inverter(object):
             # by default read first 45 holding registers (from 0 to 44)
             # they contain more than needed data
 
-            for address, regs in self.unit:
+            for address, regs in self.units:
                 rr = self._modbus.read_holding_registers(0, 45, unit=address)
                 if not rr.isError():
                     ret = True
-                    # returns G.1.8 on my unit
-                    regs.firmware = str(
+                    # returns G.1.8 on my props
+                    regs['firmware'] = str(
                         chr(rr.registers[9] >> 8) +
                         chr(rr.registers[9] & 0x000000FF) +
                         chr(rr.registers[10] >> 8) +
@@ -112,7 +115,7 @@ class Inverter(object):
                         chr(rr.registers[11] & 0x000000FF))
 
                     # does not return any interesting thing on my model
-                    regs.control_fw = str(
+                    regs['control_fw'] = str(
                         chr(rr.registers[12] >> 8) +
                         chr(rr.registers[12] & 0x000000FF) +
                         chr(rr.registers[13] >> 8) +
@@ -120,8 +123,8 @@ class Inverter(object):
                         chr(rr.registers[14] >> 8) +
                         chr(rr.registers[14] & 0x000000FF))
 
-                    # does match the label in the unit
-                    regs.serial_no = str(
+                    # does match the label in the props
+                    regs['serial_no'] = str(
                         chr(rr.registers[23] >> 8) +
                         chr(rr.registers[23] & 0x000000FF) +
                         chr(rr.registers[24] >> 8) +
@@ -135,7 +138,7 @@ class Inverter(object):
 
                     # as per Growatt protocol
                     mo = (rr.registers[28] << 16) + rr.registers[29]
-                    regs.model_no = (
+                    regs['model_no'] = (
                         'T' + str((mo & 0XF00000) >> 20) +
                         ' Q' + str((mo & 0X0F0000) >> 16) +
                         ' P' + str((mo & 0X00F000) >> 12) +
@@ -143,14 +146,14 @@ class Inverter(object):
                         ' M' + str((mo & 0X0000F0) >> 4) +
                         ' S' + str((mo & 0X00000F)))
 
-                    # 134 for my unit meaning single phase/single tracker inverter
-                    regs.dtc = rr.registers[43]
+                    # 134 for my props meaning single phase/single tracker inverter
+                    regs['dtc'] = rr.registers[43]
                 else:
-                    regs.firmware = ''
-                    regs.control_fw = ''
-                    regs.model_no = ''
-                    regs.serial_no = ''
-                    regs.dtc = -1
+                    regs['firmware'] = ''
+                    regs['control_fw'] = ''
+                    regs['model_no'] = ''
+                    regs['serial_no'] = ''
+                    regs['dtc'] = -1
                     ret = False
 
                 self.units[address] = regs
@@ -315,24 +318,29 @@ def main_loop():
 
             # get readings from inverter, if success send  to pvoutput
             inv.read_inputs()
-            if inv.status != -1:
-                # pvoutput(inv, owm)
-                # temperature report only if available
-                temp = None
-                if owm is not None and owm.fresh:
-                    temp = owm.temperature
+            print inv.units
+            for address, props in inv.units.items():
+                print props
+                if props['status'] != -1:
+                    # temperature report only if available
+                    temp = None
+                    if owm is not None and owm.fresh:
+                        temp = owm.temperature
 
-                pvo.send_status(date=inv.date, energy_gen=inv.wh_today,
-                                power_gen=inv.ac_power, vdc=inv.pv_volts,
-                                vac=inv.ac_volts, temp=temp,
-                                temp_inv=inv.temp, energy_life=inv.wh_total,
-                                power_vdc=inv.pv_power)
+                    pvo.send_status(date=props['date'], energy_gen=props['wh_today'],
+                                    power_gen=props['ac_power'], vdc=props['pv_volts'],
+                                    vac=props['ac_volts'], temp=temp,
+                                    temp_inv=props['temp'], energy_life=props['wh_total'],
+                                    power_vdc=props['pv_power'])
+                else:
+                    # some error
+                    sleep(15)  # wait a little before next inverter/try
+                    break
+            else:
+                # All inverters sent data so
                 # sleep until next multiple of 5 minutes
                 min = 5 - localnow().minute % 5
                 sleep(min*60 - localnow().second)
-            else:
-                # some error
-                sleep(60)  # 1 minute before try again
         else:
             # it is too late or too early, let's sleep until next shift
             hour = localnow().hour
