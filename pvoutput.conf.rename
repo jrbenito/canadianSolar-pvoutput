@@ -3,17 +3,17 @@
 timezone='America/Sao_Paulo'
 
 [pvoutput]
-# enter a comma separated list of systems.
+# enter a comma separated list of systems, one for each inverter.
 systemID='123456789'
 APIKEY='abcde123456789'
 
 [inverters]
 # enter a comma separated list of addresses, defaults to 0x1
-#addresses='0x1','0x2','0xa2'
+#addresses=0x1,0x2,0xa2
 #port='/dev/ttyUSB0'
 
 [owm]
 # optional section
 #OWMKEY='abcde123456789'
-#latitude=float(min=-90, max=90, default=0.0)
-#longitude=float(min=-180, max=180, default=0.0)
+#latitude=-22.33
+#longitude=49.75

@@ -27,6 +27,7 @@ class Inverter(object):
         self._modbus = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
                                     parity='N', bytesize=8, timeout=1)
         self.units = {}
+        addresses = [int(i, 16) for i in addresses]
 
         for address, sys_id in zip(addresses, system_ids):
             self.units[address] = {
@@ -55,7 +56,7 @@ class Inverter(object):
 
         if self._modbus.connect():
 
-            for address, regs in self.units:
+            for address, regs in self.units.items():
                 # by default read first 45 registers (from 0 to 44)
                 # they contain all basic information needed to report
                 rr = self._modbus.read_input_registers(0, 45, unit=address)
@@ -98,7 +99,7 @@ class Inverter(object):
             # by default read first 45 holding registers (from 0 to 44)
             # they contain more than needed data
 
-            for address, regs in self.units:
+            for address, regs in self.units.items():
                 rr = self._modbus.read_holding_registers(0, 45, unit=address)
                 if not rr.isError():
                     ret = True
@@ -315,9 +316,7 @@ def main_loop():
 
             # get readings from inverter, if success send  to pvoutput
             inv.read_inputs()
-            print inv.units
             for address, props in inv.units.items():
-                print props
                 if props['status'] != -1:
                     # temperature report only if available
                     temp = None
