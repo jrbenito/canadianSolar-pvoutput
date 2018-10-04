@@ -323,11 +323,16 @@ def main_loop():
                     if owm is not None and owm.fresh:
                         temp = owm.temperature
 
-                    pvo.send_status(date=props['date'], energy_gen=props['wh_today'],
-                                    power_gen=props['ac_power'], vdc=props['pv_volts'],
-                                    vac=props['ac_volts'], temp=temp,
-                                    temp_inv=props['temp'], energy_life=props['wh_total'],
-                                    power_vdc=props['pv_power'])
+                    pvo.send_status(date=props['date'],
+                                    energy_gen=props['wh_today'],
+                                    power_gen=props['ac_power'],
+                                    vdc=props['pv_volts'],
+                                    vac=props['ac_volts'],
+                                    temp=temp,
+                                    temp_inv=props['temp'],
+                                    energy_life=props['wh_total'],
+                                    power_vdc=props['pv_power'],
+                                    system_id=props['system_id'])
                 else:
                     # some error
                     sleep(15)  # wait a little before next inverter/try
@@ -387,7 +392,11 @@ if __name__ == '__main__':
 
     if ((config['pvoutput']['APIKEY'] is not None) and
        (config['pvoutput']['systemID'] is not None)):
-        pvo = PVOutputAPI(config['pvoutput']['APIKEY'], config['pvoutput']['systemID'])
+        # multiple system id are not supported by pvoutput calss
+        sys_id = None
+        if len(config['pvoutput']['systemID']) == 1:
+            sys_id = config['pvoutput']['systemID'][0]
+        pvo = PVOutputAPI(config['pvoutput']['APIKEY'], sys_id)
     else:
         print('Need pvoutput APIKEY and systemID to work')
         sys.exit(1)
