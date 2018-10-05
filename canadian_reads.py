@@ -313,7 +313,7 @@ def main_loop():
             if 24 > hour >= shStop:
                 # before midnight
                 snooze = (((shStart - hour) + 24) * 60) - minute
-            elif shStart > hour <= 0:
+            elif shStart > hour >= 0:
                 # after midnight
                 snooze = ((shStart - hour) * 60) - minute
             print localnow().strftime('%Y-%m-%d %H:%M') + ' - Next shift starts in ' + \
