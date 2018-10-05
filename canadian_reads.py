@@ -297,8 +297,8 @@ def main_loop():
                                 temp_inv=inv.temp, energy_life=inv.wh_total,
                                 power_vdc=inv.pv_power)
                 # sleep until next multiple of 5 minutes
-                min = 5 - localnow().minute % 5
-                sleep(min*60 - localnow().second)
+                minutes = 5 - localnow().minute % 5
+                sleep(minutes*60 - localnow().second)
             else:
                 # some error
                 sleep(60)  # 1 minute before try again
