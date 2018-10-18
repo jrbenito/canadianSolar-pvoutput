@@ -2,7 +2,6 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1a8b27961c904e8093f5adaa40ca8e8f)](https://app.codacy.com/app/jrbenito/canadianSolar-pvoutput?utm_source=github.com&utm_medium=referral&utm_content=jrbenito/canadianSolar-pvoutput&utm_campaign=Badge_Grade_Dashboard)
 
-
 This code reads registers from Canadian Solar and Growatt inverters via modbus protocol over a RS-232 or RS-485 interface.
 I developed it to work with a Canadian Solar CSI-3K-TL (uses Growatt modbus protocol), after some other members of pvouput community joined and tested on other models (see below). This might work with any Growatt based inverter that follows modbus protocol but is tested on:
 
@@ -23,8 +22,8 @@ Optionally this code reads local temperature from [OpenWheatherMap](https://open
 
 There is a configuration template you need to copy/rename and edit:
 
-```
-$ cp pvoutput.conf.rename pvoutput.conf
+```bash
+cp pvoutput.conf.rename pvoutput.conf
 ```
 
 Edit `pvoutput.conf` with your preferred text editor. All commented lines are optional, but other shall have values. Please notice that some options are lists (i.e. systemID and addresses), those lists are represented as comma separated values (val1, val2, val3). At least pvoutput credentials (`systemID` and `APIKEY`) must be supplied since there are no reasonable defaults to it.
@@ -41,7 +40,8 @@ To run in docker create a container with `docker run --restart always --name="pv
 
 ### Direct (no docker)
 
-```
+```bash
 $ pip install -r requirements.txt
+[...]
 $ ./pvoutput.sh
 ```
