@@ -45,3 +45,9 @@ $ pip install -r requirements.txt
 [...]
 $ ./pvoutput.sh
 ```
+
+## Credits
+
+This code was inspired by [Steffen Nyeland](http://fixedbycode.blogspot.com/2014/04/how-to-upload-data-from-growatt.html) blog post and extensive help from [pvoutput.org community](https://forum.pvoutput.org/t/help-required-uploading-growatt-inverter-to-pvoutput/552) whose users where kind enough to test, feedback, suggest features and point out a lot of bugs. Thank you all for your patience and support.
+
+Also, I need to thank engineers from Growatt and Canadian Solar who where kind enough to provide documentation and helped solve confusion between old and newer versions of modbus protocol. Thanks to Mr. Denilson and Mr. Hugo from Canadian Solar Brazilian branch office and Mr. Darren Song from Growatt China.
