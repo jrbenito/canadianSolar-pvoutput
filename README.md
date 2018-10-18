@@ -5,9 +5,9 @@
 This code reads registers from Canadian Solar and Growatt inverters via modbus protocol over a RS-232 or RS-485 interface.
 I developed it to work with a Canadian Solar CSI-3K-TL (uses Growatt modbus protocol), after some other members of pvouput community joined and tested on other models (see below). This might work with any Growatt based inverter that follows modbus protocol but is tested on:
 
-. Canadian Solar CSI-3K-TL
-. Growatt 1500-S (thanks @bobboulby)
-. Growatt 33000TL3-HE (thanks @lampra)
+* Canadian Solar CSI-3K-TL
+* Growatt 1500-S (thanks @bobboulby)
+* Growatt 33000TL3-HE (thanks @lampra)
 
 ## pvoutput
 
