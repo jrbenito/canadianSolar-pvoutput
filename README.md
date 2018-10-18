@@ -1,13 +1,14 @@
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1a8b27961c904e8093f5adaa40ca8e8f)](https://app.codacy.com/app/jrbenito/canadianSolar-pvoutput?utm_source=github.com&utm_medium=referral&utm_content=jrbenito/canadianSolar-pvoutput&utm_campaign=Badge_Grade_Dashboard)
-
 # Canadina Solar / Growatt
 
-This code reads registers from Canadian Solar inverter via modbus protocol over a RS-232 or RS-485 interface. 
-I only tested it on a CSI-3K-TL witch is much similar (probably a clone altough I have no written evidence)
-of Growatt inverters. Besides very similar hardware and display interface look and feel, modbus protocol are identical.
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1a8b27961c904e8093f5adaa40ca8e8f)](https://app.codacy.com/app/jrbenito/canadianSolar-pvoutput?utm_source=github.com&utm_medium=referral&utm_content=jrbenito/canadianSolar-pvoutput&utm_campaign=Badge_Grade_Dashboard)
 
-Although there is a function to synchronize inverter's clock based on comments posted to the Steffen blog, this function 
-was never tested since Canadian opted to not implement clock features into CSI-3K-TL.
+
+This code reads registers from Canadian Solar and Growatt inverters via modbus protocol over a RS-232 or RS-485 interface.
+I developed it to work with a Canadian Solar CSI-3K-TL (uses Growatt modbus protocol), after some other members of pvouput community joined and tested on other models (see below). This might work with any Growatt based inverter that follows modbus protocol but is tested on:
+
+. Canadian Solar CSI-3K-TL
+. Growatt 1500-S (thanks @bobboulby)
+. Growatt 33000TL3-HE (thanks @lampra)
 
 ## pvoutput
 
