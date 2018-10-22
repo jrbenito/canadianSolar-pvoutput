@@ -8,7 +8,7 @@ from time import sleep, time
 from configobj import ConfigObj, ConfigObjError
 from validate import Validator
 from pyowm import OWM
-from pymodbus.client.sync import ModbusSerialClient as ModbusClient
+from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 
 
 # Local time with timezone
@@ -24,8 +24,7 @@ class Inverter(object):
         if len(addresses) > len(system_ids):
             raise ValueError("Error: need same number of inverters and system_ids")
 
-        self._modbus = ModbusClient(method='rtu', port=port, baudrate=9600, stopbits=1,
-                                    parity='N', bytesize=8, timeout=1)
+        self._modbus = ModbusClient('192.168.1.60')
         self.units = {}
         addresses = [int(i, 16) for i in addresses]
 
@@ -59,25 +58,27 @@ class Inverter(object):
             for address, regs in self.units.items():
                 # by default read first 45 registers (from 0 to 44)
                 # they contain all basic information needed to report
-                rr = self._modbus.read_input_registers(0, 45, unit=address)
+                rr = self._modbus.read_input_registers(40081, 6, unit=address)
                 if not rr.isError():
                     ret = True
                     regs['date'] = localnow()
-                    regs['status'] = rr.registers[0]
+                    regs['status'] = 1 # we are not reading ABB status
                     if regs['status'] != -1:
                         regs['cmo_str'] = 'Status: ' + str(regs['status'])
                     # my setup will never use high nibble but I will code it anyway
-                    regs['pv_power'] = float((rr.registers[1] << 16) +
-                                             rr.registers[2]) / 10
-                    regs['pv_volts'] = float(rr.registers[3]) / 10
-                    regs['ac_power'] = float((rr.registers[11] << 16) +
-                                             rr.registers[12]) / 10
-                    regs['ac_volts'] = float(rr.registers[14]) / 10
-                    regs['wh_today'] = float((rr.registers[26] << 16) +
-                                             rr.registers[27]) * 100
-                    regs['wh_total'] = float((rr.registers[28] << 16) +
-                                             rr.registers[29]) * 100
-                    regs['temp'] = float(rr.registers[32]) / 10
+                    regs['ac_power'] = float(rr.registers[3])
+                    regs['ac_volts'] = float(rr.registers[0])
+
+                    rr = self._modbus.read_input_registers(40188, 5, unit=address)
+                    if not rr.isError():
+                        regs['wh_total'] = float(
+                            (rr.registers[0] << 48) +
+                            (rr.registers[1] << 32) +
+                            (rr.registers[2] << 16) +
+                            rr.registers[3]
+                        )
+                    else:
+                        regs['wh_total'] = -1.0
                 else:
                     regs['status'] = -1
                     ret = False
@@ -93,74 +94,7 @@ class Inverter(object):
 
     def version(self):
         """Read firmware version"""
-        ret = False
-
-        if self._modbus.connect():
-            # by default read first 45 holding registers (from 0 to 44)
-            # they contain more than needed data
-
-            for address, regs in self.units.items():
-                rr = self._modbus.read_holding_registers(0, 45, unit=address)
-                if not rr.isError():
-                    ret = True
-                    # returns G.1.8 on my props
-                    regs['firmware'] = str(
-                        chr(rr.registers[9] >> 8) +
-                        chr(rr.registers[9] & 0x000000FF) +
-                        chr(rr.registers[10] >> 8) +
-                        chr(rr.registers[10] & 0x000000FF) +
-                        chr(rr.registers[11] >> 8) +
-                        chr(rr.registers[11] & 0x000000FF))
-
-                    # does not return any interesting thing on my model
-                    regs['control_fw'] = str(
-                        chr(rr.registers[12] >> 8) +
-                        chr(rr.registers[12] & 0x000000FF) +
-                        chr(rr.registers[13] >> 8) +
-                        chr(rr.registers[13] & 0x000000FF) +
-                        chr(rr.registers[14] >> 8) +
-                        chr(rr.registers[14] & 0x000000FF))
-
-                    # does match the label in the props
-                    regs['serial_no'] = str(
-                        chr(rr.registers[23] >> 8) +
-                        chr(rr.registers[23] & 0x000000FF) +
-                        chr(rr.registers[24] >> 8) +
-                        chr(rr.registers[24] & 0x000000FF) +
-                        chr(rr.registers[25] >> 8) +
-                        chr(rr.registers[25] & 0x000000FF) +
-                        chr(rr.registers[26] >> 8) +
-                        chr(rr.registers[26] & 0x000000FF) +
-                        chr(rr.registers[27] >> 8) +
-                        chr(rr.registers[27] & 0x000000FF))
-
-                    # as per Growatt protocol
-                    mo = (rr.registers[28] << 16) + rr.registers[29]
-                    regs['model_no'] = (
-                        'T' + str((mo & 0XF00000) >> 20) +
-                        ' Q' + str((mo & 0X0F0000) >> 16) +
-                        ' P' + str((mo & 0X00F000) >> 12) +
-                        ' U' + str((mo & 0X000F00) >> 8) +
-                        ' M' + str((mo & 0X0000F0) >> 4) +
-                        ' S' + str((mo & 0X00000F)))
-
-                    # 134 for my props meaning single phase/single tracker inverter
-                    regs['dtc'] = rr.registers[43]
-                else:
-                    regs['firmware'] = ''
-                    regs['control_fw'] = ''
-                    regs['model_no'] = ''
-                    regs['serial_no'] = ''
-                    regs['dtc'] = -1
-                    ret = False
-
-                self.units[address] = regs
-
-            self._modbus.close()
-        else:
-            print 'Error connecting to port'
-            ret = False
-
+        ret = True
         return ret
 
 
@@ -324,14 +258,11 @@ def main_loop():
                         temp = owm.temperature
 
                     pvo.send_status(date=props['date'],
-                                    energy_gen=props['wh_today'],
+                                    energy_gen=props['wh_total'],
                                     power_gen=props['ac_power'],
-                                    vdc=props['pv_volts'],
+                                    cumulative=1,
                                     vac=props['ac_volts'],
                                     temp=temp,
-                                    temp_inv=props['temp'],
-                                    energy_life=props['wh_total'],
-                                    power_vdc=props['pv_power'],
                                     system_id=props['system_id'])
                 else:
                     # some error
