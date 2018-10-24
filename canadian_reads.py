@@ -275,8 +275,10 @@ class PVOutputAPI(object):
             payload['v5'] = float(temp)
         if vdc is not None:
             payload['v6'] = float(vdc)
-        if cumulative is not None:
+        if cumulative is True:
             payload['c1'] = 1
+        else:
+            payload['c1'] = 0
         if vac is not None:
             payload['v8'] = float(vac)
         if temp_inv is not None:
