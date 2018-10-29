@@ -4,7 +4,7 @@ timezone='America/Sao_Paulo'
 
 [pvoutput]
 # enter a comma separated list of systems, one for each inverter.
-systemID='123456789'
+systemID='12345', '09876'
 APIKEY='abcde123456789'
 
 [inverters]
