@@ -207,7 +207,7 @@ class PVOutputAPI(object):
     def __call(self, url, payload, system_id=None):
         # system_id might be set during object creation or passed
         # as parameter to this function. Will not proceed without it.
-        sys_id = system_id if system_id is None else self._systemID
+        sys_id = system_id if system_id is not None else self._systemID
         if sys_id is None:
             print 'Warnning: Missing system_id, doing nothing'
             return False
