@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys
 import requests
@@ -79,7 +79,7 @@ class Inverter(object):
 
             self._inv.close()
         else:
-            print 'Error connecting to port'
+            print('Error connecting to port')
             ret = False
 
         return ret
@@ -134,7 +134,7 @@ class Inverter(object):
 
             self._inv.close()
         else:
-            print 'Error connecting to port'
+            print('Error connecting to port')
             ret = False
 
         return ret
@@ -287,7 +287,7 @@ def main_loop():
                     owm.get()
                     owm.fresh = True
                 except Exception as e:
-                    print 'Error getting weather: {}'.format(e)
+                    print('Error getting weather: {}'.format(e))
                     owm.fresh = False
 
             # get readings from inverter, if success send  to pvoutput
@@ -318,8 +318,8 @@ def main_loop():
             elif shStart > hour >= 0:
                 # after midnight
                 snooze = ((shStart - hour) * 60) - minute
-            print localnow().strftime('%Y-%m-%d %H:%M') + ' - Next shift starts in ' + \
-                str(snooze) + ' minutes'
+            print(localnow().strftime('%Y-%m-%d %H:%M') + ' - Next shift starts in ' + \
+                str(snooze) + ' minutes')
             sys.stdout.flush()
             snooze = snooze * 60  # seconds
             sleep(snooze)
@@ -329,5 +329,5 @@ if __name__ == '__main__':
     try:
         main_loop()
     except KeyboardInterrupt:
-        print >> sys.stderr, '\nExiting by user request.\n'
+        print('\nExiting by user request.\n', file=sys.stderr)
         sys.exit(0)
