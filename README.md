@@ -25,7 +25,7 @@ For portability and also for simplify development, I run this code into a docker
 
 To build docker image just run `docker build -t canadian-pvoutput .`
 
-To run in docker create a container with `docker run --restart always --name="pvoutput" -d -i --device=/dev/ttyUSB0 --net=host -v /home/jrbenito/canadian-pvoutput:/app -w /app jrbenito/canadian-pvoutput ./pvoutput.sh`. Script `pvoutput.sh` is a wrapper to run python script continuasly if it fails. Docker will automaticaly restart this container in case of computer reboot or container fails.
+To run in docker create a container with `docker run --restart always --name="pvoutput" -d -i --device=/dev/ttyUSB0 --net=host -v /home/jrbenito/canadian-pvoutput:/app -w /app jrbenito/canadian-pvoutput ./pvoutput.sh`. Script `pvoutput.sh` is a wrapper to run python script continuously if it fails. Docker will automaticaly restart this container in case of computer reboot or container fails.
 
 === Direct (no docker)
 
